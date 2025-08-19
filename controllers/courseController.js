@@ -191,7 +191,6 @@ export const getAllFaqsInCourses = async (req, res) => {
   }
 };
 
-
 export const getCourseFaqs = async (req, res) => {
   const { courseId } = req.params;
 
