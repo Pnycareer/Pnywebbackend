@@ -249,9 +249,32 @@ export const deleteFaq = async (req, res) => {
   }
 };
 
+// export const getallCourses = async (req, res) => {
+//   try {
+//     const coursesByCategory = await CourseGroup.find({});
+//     res.status(200).json({
+//       success: true,
+//       data: coursesByCategory,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch courses",
+//       error: error.message,
+//     });
+//   }
+// };
+
 export const getallCourses = async (req, res) => {
   try {
-    const coursesByCategory = await CourseGroup.find({});
+    const coursesByCategory = await CourseGroup.find({})
+      .populate({
+        path: 'courses.Instructor',
+        model: 'Instructor',
+        select: 'name photo', // whatever you need
+      })
+      .lean(); // faster response, plain objects
+
     res.status(200).json({
       success: true,
       data: coursesByCategory,
@@ -259,7 +282,7 @@ export const getallCourses = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Failed to fetch courses",
+      message: 'Failed to fetch courses',
       error: error.message,
     });
   }
