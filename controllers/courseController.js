@@ -5,6 +5,7 @@ import SubCourses from "../models/SubCourse.js"; // Ensure correct path
 import { uploadFiles } from "../multer/multerConfig.js";
 import CourseFeature from "../models/courseModel.js";
 import Instructor from "../models/Instructor.js";
+import mongoose from "mongoose";
 
 export const createCourse = async (req, res) => {
   try {
@@ -288,6 +289,8 @@ export const getallCourses = async (req, res) => {
   }
 };
 
+
+
 export const getCourseById = async (req, res) => {
   try {
     const id = req.params.id;
@@ -319,99 +322,241 @@ export const getCourseById = async (req, res) => {
   }
 };
 
+// export const updateCourse = async (req, res) => {
+//   uploadFiles(req, res, async (err) => {
+//     if (err) {
+//       return res.status(400).json({ message: err.message });
+//     }
+
+//     try {
+//       const courseId = req.params.id;
+//       const updatedData = { ...req.body };
+
+//       const allGroups = await CourseGroup.find({});
+
+//       let targetGroup = null;
+//       let targetCourse = null;
+
+//       // STEP 1: Check for duplicates (only url_Slug)
+//       for (const group of allGroups) {
+//         for (const course of group.courses) {
+//           if (course._id.toString() !== courseId) {
+//             if (course.url_Slug === updatedData.url_Slug) {
+//               return res.status(400).json({
+//                 message:
+//                   "Duplicate found: url_Slug already exists in another course.",
+//               });
+//             }
+//           }
+//         }
+//       }
+
+//       // STEP 2: Find and update the course
+//       for (const group of allGroups) {
+//         const courseIndex = group.courses.findIndex(
+//           (c) => c._id.toString() === courseId
+//         );
+
+//         if (courseIndex !== -1) {
+//           targetGroup = group;
+//           targetCourse = group.courses[courseIndex];
+
+//           // --- FILE: Image ---
+//           if (req.files?.course_Image) {
+//             const newImagePath = req.files["course_Image"][0].path;
+
+//             if (targetCourse.course_Image) {
+//               const oldImagePath = path.resolve(targetCourse.course_Image);
+//               fs.unlink(oldImagePath, (err) => {
+//                 if (err) console.error("Error deleting old image:", err);
+//               });
+//             }
+
+//             targetCourse.course_Image = newImagePath;
+//           }
+
+//           // --- FILE: Brochure ---
+//           if (req.files?.Brochure) {
+//             const newBrochurePath = req.files["Brochure"][0].path;
+
+//             if (targetCourse.Brochure) {
+//               const oldBrochurePath = path.resolve(targetCourse.Brochure);
+//               fs.unlink(oldBrochurePath, (err) => {
+//                 if (err) console.error("Error deleting old brochure:", err);
+//               });
+//             }
+
+//             targetCourse.Brochure = newBrochurePath;
+//           }
+
+//           // --- Update other fields ---
+//           for (const key in updatedData) {
+//             if (updatedData[key] !== undefined) {
+//               targetCourse[key] = updatedData[key];
+//             }
+//           }
+
+//           // Save the modified CourseGroup
+//           await targetGroup.save();
+
+//           return res.status(200).json({
+//             message: "Course updated successfully",
+//             updatedCourse: targetCourse,
+//           });
+//         }
+//       }
+
+//       res.status(404).json({ message: "Course not found" });
+//     } catch (error) {
+//       res
+//         .status(500)
+//         .json({ message: "Internal server error: " + error.message });
+//     }
+//   });
+// };
+
+
 export const updateCourse = async (req, res) => {
   uploadFiles(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
+    if (err) return res.status(400).json({ message: err.message });
+
+    const session = await mongoose.startSession();
 
     try {
       const courseId = req.params.id;
-      const updatedData = { ...req.body };
 
-      const allGroups = await CourseGroup.find({});
+      // allow editing + optional move
+      const {
+        targetCategoryId,
+        targetCategoryName,
+        ...updatedData
+      } = req.body;
 
-      let targetGroup = null;
-      let targetCourse = null;
+      // 1) load all groups once (you already do this)
+      const allGroups = await CourseGroup.find({}).session(session);
 
-      // STEP 1: Check for duplicates (only url_Slug)
-      for (const group of allGroups) {
-        for (const course of group.courses) {
-          if (course._id.toString() !== courseId) {
-            if (course.url_Slug === updatedData.url_Slug) {
-              return res.status(400).json({
-                message:
-                  "Duplicate found: url_Slug already exists in another course.",
-              });
+      // 2) duplicate guard for url_Slug (unchanged)
+      if (updatedData.url_Slug) {
+        for (const group of allGroups) {
+          for (const course of group.courses) {
+            if (course._id.toString() !== courseId) {
+              if (course.url_Slug === updatedData.url_Slug) {
+                return res.status(400).json({
+                  message:
+                    "Duplicate found: url_Slug already exists in another course.",
+                });
+              }
             }
           }
         }
       }
 
-      // STEP 2: Find and update the course
+      // 3) find source group + course
+      let sourceGroup = null;
+      let courseIndex = -1;
+
       for (const group of allGroups) {
-        const courseIndex = group.courses.findIndex(
-          (c) => c._id.toString() === courseId
+        const idx = group.courses.findIndex((c) => c._id.toString() === courseId);
+        if (idx !== -1) {
+          sourceGroup = group;
+          courseIndex = idx;
+          break;
+        }
+      }
+
+      if (!sourceGroup) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      // the existing course subdoc
+      const targetCourse = sourceGroup.courses[courseIndex];
+
+      // 4) file updates (same behavior as yours)
+      if (req.files?.course_Image) {
+        const newImagePath = req.files["course_Image"][0].path;
+        if (targetCourse.course_Image) {
+          const oldImagePath = path.resolve(targetCourse.course_Image);
+          fs.unlink(oldImagePath, (e) => e && console.error("Error deleting old image:", e));
+        }
+        targetCourse.course_Image = newImagePath;
+      }
+
+      if (req.files?.Brochure) {
+        const newBrochurePath = req.files["Brochure"][0].path;
+        if (targetCourse.Brochure) {
+          const oldBrochurePath = path.resolve(targetCourse.Brochure);
+          fs.unlink(oldBrochurePath, (e) => e && console.error("Error deleting old brochure:", e));
+        }
+        targetCourse.Brochure = newBrochurePath;
+      }
+
+      // 5) update other scalar fields
+      for (const key in updatedData) {
+        if (updatedData[key] !== undefined) {
+          targetCourse[key] = updatedData[key];
+        }
+      }
+
+      // 6) figure out destination group (if a move was requested)
+      let destinationGroup = null;
+      if (targetCategoryId || targetCategoryName) {
+        destinationGroup = allGroups.find((g) =>
+          targetCategoryId
+            ? g._id.toString() === String(targetCategoryId)
+            : g.category_Name === String(targetCategoryName)
         );
 
-        if (courseIndex !== -1) {
-          targetGroup = group;
-          targetCourse = group.courses[courseIndex];
-
-          // --- FILE: Image ---
-          if (req.files?.course_Image) {
-            const newImagePath = req.files["course_Image"][0].path;
-
-            if (targetCourse.course_Image) {
-              const oldImagePath = path.resolve(targetCourse.course_Image);
-              fs.unlink(oldImagePath, (err) => {
-                if (err) console.error("Error deleting old image:", err);
-              });
-            }
-
-            targetCourse.course_Image = newImagePath;
-          }
-
-          // --- FILE: Brochure ---
-          if (req.files?.Brochure) {
-            const newBrochurePath = req.files["Brochure"][0].path;
-
-            if (targetCourse.Brochure) {
-              const oldBrochurePath = path.resolve(targetCourse.Brochure);
-              fs.unlink(oldBrochurePath, (err) => {
-                if (err) console.error("Error deleting old brochure:", err);
-              });
-            }
-
-            targetCourse.Brochure = newBrochurePath;
-          }
-
-          // --- Update other fields ---
-          for (const key in updatedData) {
-            if (updatedData[key] !== undefined) {
-              targetCourse[key] = updatedData[key];
-            }
-          }
-
-          // Save the modified CourseGroup
-          await targetGroup.save();
-
-          return res.status(200).json({
-            message: "Course updated successfully",
-            updatedCourse: targetCourse,
-          });
+        if (!destinationGroup) {
+          return res.status(400).json({ message: "Target category not found" });
         }
       }
 
-      res.status(404).json({ message: "Course not found" });
+      // 7) if no destination OR same category, just save the source group
+      const movingWithinSameGroup =
+        !destinationGroup || destinationGroup._id.equals(sourceGroup._id);
+
+      if (movingWithinSameGroup) {
+        await sourceGroup.save({ session });
+        return res.status(200).json({
+          message: "Course updated successfully",
+          updatedCourse: targetCourse,
+        });
+      }
+
+      // 8) actually move: pull from source ➜ push into destination (transaction)
+      await session.withTransaction(async () => {
+        // capture the current course as a plain object (preserve _id & timestamps)
+        const movedCourse = targetCourse.toObject();
+
+        // remove from source
+        sourceGroup.courses.id(courseId).deleteOne();
+        await sourceGroup.save({ session });
+
+        // push into destination with SAME _id
+        destinationGroup.courses.push(movedCourse);
+        await destinationGroup.save({ session });
+      });
+
+      // reload the course from destination to return fresh data
+      const reloadedDest = await CourseGroup.findById(destinationGroup._id).session(session);
+      const updatedCourse =
+        reloadedDest.courses.find((c) => c._id.toString() === courseId);
+
+      return res.status(200).json({
+        message: "Course updated & moved successfully",
+        updatedCourse,
+        fromCategory: sourceGroup.category_Name,
+        toCategory: destinationGroup.category_Name,
+      });
     } catch (error) {
-      res
+      return res
         .status(500)
         .json({ message: "Internal server error: " + error.message });
+    } finally {
+      session.endSession();
     }
   });
 };
-
 export const updateCategoryInfo = async (req, res) => {
   try {
     const { id } = req.params; // This is the category (CourseGroup) _id
@@ -561,6 +706,59 @@ export const getCoursesByCategory = async (req, res) => {
     res.status(500).json({ message: "Server Error: " + error.message });
   }
 };
+
+export const getCoursesByCategoryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find by _id instead of category_Name
+    const courseGroup = await CourseGroup.findById(id);
+
+    if (!courseGroup) {
+      return res.status(404).json({ message: "No category found for this ID" });
+    }
+
+    // Populate Instructor manually for each course
+    const populatedCourses = await Promise.all(
+      courseGroup.courses.map(async (course) => {
+        const populated = await CourseGroup.populate(course, {
+          path: "Instructor",
+        });
+        return populated;
+      })
+    );
+
+    res.status(200).json({
+      category_Name: courseGroup.category_Name,
+      category_Description: courseGroup.category_Description,
+      courses: populatedCourses,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error: " + error.message });
+  }
+};
+
+export const getCourseCategories = async (req, res) => {
+  try {
+    const categories = await CourseGroup.find({}, {
+      _id: 1,
+      category_Name: 1,
+      category_Description: 1
+    });
+
+    res.status(200).json(categories);
+  } catch (error) {
+    console.error("🔥 Error fetching course categories:", error); // this will show the real reason
+    res.status(500).json({
+      success: false,
+      message: "Error fetching courses",
+      error: error.message || error
+    });
+  }
+};
+
+
+
 
 export const getBootcampCoursesOnly = async (req, res) => {
   try {

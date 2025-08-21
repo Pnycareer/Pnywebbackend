@@ -15,6 +15,8 @@ import {
   updateFaq,
   deleteFaq,
   getAllFaqsInCourses,
+  getCoursesByCategoryById,
+  getCourseCategories,
 } from "../controllers/courseController.js";
 import { uploadFiles } from "../multer/multerConfig.js";
 import { allowRoles, checkPublicToken } from "../middlewar/checkRole.js";
@@ -28,8 +30,11 @@ courseRoutes.get("/faqs", getAllFaqsInCourses);
 courseRoutes.get("/getonslug/:slug", getCoursesByCategorySlug);
 courseRoutes.get("/:categoryId", getCoursesByName);
 courseRoutes.get("/getoncategory/:category", checkPublicToken , getCoursesByCategory);
+courseRoutes.get("/getoncategoryid/:id", checkPublicToken, getCoursesByCategoryById);
+courseRoutes.get("/getallcategories/getcategory", getCourseCategories);
 courseRoutes.get("/bootcamp-courses/get", getBootcampCoursesOnly);
 courseRoutes.get("/getonid/:id",  getCourseById);
+
 
 // Protected
 courseRoutes.post("/add-course", verifyToken , allowRoles("admin" , 'modifier' , "superadmin") , uploadFiles, createCourse);

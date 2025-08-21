@@ -18,7 +18,7 @@ const blogSubSchema = new mongoose.Schema({
   },
   pageindex: { type: Boolean, default: true },
   insitemap: { type: Boolean, default: true },
-  canonical: { type: String, trim: true },
+  // canonical: { type: String, trim: true },
   inviewweb: { type: Boolean, default: true },
   showtoc: { type: Boolean, default: true } // ✅ Added this field
 });

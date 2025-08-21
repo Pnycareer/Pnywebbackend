@@ -48,7 +48,6 @@ export const createBlog = async (req, res) => {
       url_slug,
       pageindex,
       insitemap,
-      canonical,
       inviewweb,
     } = req.body;
 
@@ -56,6 +55,17 @@ export const createBlog = async (req, res) => {
     const authorProfileImage = req.files?.authorProfileImage
       ? req.files.authorProfileImage[0].path
       : null;
+
+    // 🔍 Check for duplicate slug across all categories
+    const isDuplicate = await BlogCategory.findOne({
+      "blogs.url_slug": url_slug,
+    });
+
+    if (isDuplicate) {
+      return res.status(400).json({
+        message: "A blog with this URL slug already exists.",
+      });
+    }
 
     const newBlog = {
       blogName,
@@ -74,12 +84,11 @@ export const createBlog = async (req, res) => {
       },
       pageindex: pageindex || 0,
       insitemap: insitemap !== undefined ? insitemap : true,
-      canonical: canonical || "",
       inviewweb: inviewweb !== undefined ? inviewweb : true,
-      showtoc: req.body.showtoc !== undefined ? req.body.showtoc : true, // ✅ Add this line
+      showtoc: req.body.showtoc !== undefined ? req.body.showtoc : true,
     };
 
-    // Find or Create Category
+    // 🏷️ Handle category
     let category = await BlogCategory.findOne({ blogCategory });
 
     if (category) {
@@ -100,6 +109,7 @@ export const createBlog = async (req, res) => {
       .json({ message: "Failed to create blog", error: error.message });
   }
 };
+
 
 // Get All Blogs
 export const getAllBlogs = async (req, res) => {
