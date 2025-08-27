@@ -4,6 +4,7 @@ import {
   deleteEFlyer,
   getAllEFlyers,
   getEFlyerById,
+  updateCategoryImage,
   updateEFlyer,
 } from "../controllers/eflyerController.js";
 import { uploadFiles } from "../multer/multerConfig.js";
@@ -15,5 +16,7 @@ router.delete("/:id", deleteEFlyer); // NEW
 router.get("/", getAllEFlyers);
 router.get("/getonid/:id", getEFlyerById);
 router.put('/:id', uploadFiles, updateEFlyer);
+router.put("/category/:categoryId/image", uploadFiles, updateCategoryImage);
+
 
 export default router;

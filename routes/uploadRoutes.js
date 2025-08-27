@@ -11,12 +11,21 @@ dotenv.config();
 router.post("/upload-editor-image", uploadSingleImage, (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
     }
-    const imageUrl = `${process.env.BASE_URL}/${req.file.path.replace(/\\/g, "/")}`;
+    const imageUrl = `${process.env.BASE_URL}/${req.file.path.replace(
+      /\\/g,
+      "/"
+    )}`;
     res.status(200).json({ success: true, url: imageUrl });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Image upload failed", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Image upload failed",
+      error: err.message,
+    });
   }
 });
 

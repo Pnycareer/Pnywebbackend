@@ -182,4 +182,37 @@ export const updateEFlyer = async (req, res) => {
   }
 };
 
+export const updateCategoryImage = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    // accept either files.flyerFile[] (your current multer setup) or single file as fallback
+    const newImagePath =
+      req.files?.flyerFile?.[0]?.path || req.file?.path || null;
+
+    if (!newImagePath) {
+      return res.status(400).json({ message: 'No image uploaded' });
+    }
+
+    const category = await CategoryWithEflyers.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    // delete previous image from disk (if it existed)
+    if (category.imageUrl) {
+      const oldPath = path.resolve(category.imageUrl);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    category.imageUrl = newImagePath;
+    const saved = await category.save();
+
+    res.status(200).json({ message: 'Category image updated', category: saved });
+  } catch (err) {
+    console.error('updateCategoryImage error:', err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 

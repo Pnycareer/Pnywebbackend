@@ -10,7 +10,7 @@ const CategoryWithEflyersSchema = new Schema({
     },
     imageUrl: {
         type: String,
-        required: true
+        required: false
     },
     eflyers: [
         {
@@ -24,7 +24,7 @@ const CategoryWithEflyersSchema = new Schema({
             },
             brochureUrl: {
                 type: String,
-                required: true
+                required: false
             }
         }
     ]

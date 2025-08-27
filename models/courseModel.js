@@ -3,7 +3,7 @@
   const LectureSchema = new mongoose.Schema({
     lectureNumber: { type: Number, required: true },
     title: { type: String, required: true },
-    content: { type: String, required: true },
+    content: { type: String, required: false },
     topics: { type: String, required: true }, // <-- changed here
   });
 
