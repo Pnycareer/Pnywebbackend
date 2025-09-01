@@ -49,7 +49,7 @@ const allowedOrigins = [
   "http://localhost:3000", // Add more ports or domains as needed
   "https://webbackendfront.vercel.app", // Add more ports or domains as needed
   "https://pnywebfrontend.vercel.app", // Add more ports or domains as needed
-  "https://pnywebfrontend.vercel.app/", // Add more ports or domains as needed
+  "https://www.pnywebfrontend.vercel.app", // Add more ports or domains as needed
 ];
 
 app.use(
