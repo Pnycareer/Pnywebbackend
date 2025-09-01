@@ -44,6 +44,7 @@ app.use(express.json({ limit: "50mb" }));
 // CORS Middleware Configuration
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5175",
   "http://localhost:10001", // Add more ports or domains as needed
   "http://localhost:3000", // Add more ports or domains as needed
   "https://webbackendfront.vercel.app", // Add more ports or domains as needed
@@ -94,7 +95,7 @@ app.use("/api/v1/news", news);
 app.use("/api/v1/gallery", gallery);
 app.use("/api/v1/contact", contactRoutes);
 app.use("/api/auth", authRoutes);
-app.use('/api/users', userRoutes);
+app.use("/api/users", userRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 8080;
