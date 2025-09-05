@@ -1,5 +1,5 @@
-import express from 'express'
-import { addMeta , getMetas } from '../controllers/Metacontroller.js';
+import express from "express";
+import { addMeta, getMetas } from "../controllers/Metacontroller.js";
 
 const router = express.Router();
 
@@ -9,4 +9,4 @@ router.post("/metas", addMeta);
 // Route to get all meta information
 router.get("/home", getMetas);
 
-export default  router;
+export default router;
