@@ -111,6 +111,50 @@ export const createCourse = async (req, res) => {
   }
 };
 
+// controllers/courseController.js
+export const setCategoryMeta = async (req, res) => {
+  try {
+    const { id } = req.params; // category (CourseGroup) _id
+    const { category_Meta_Title, category_Meta_Description } = req.body;
+
+    if (
+      typeof category_Meta_Title === "undefined" &&
+      typeof category_Meta_Description === "undefined"
+    ) {
+      return res
+        .status(400)
+        .json({
+          message: "Provide category_Meta_Title or category_Meta_Description",
+        });
+    }
+
+    const category = await CourseGroup.findById(id);
+    if (!category)
+      return res.status(404).json({ message: "Category not found" });
+
+    if (typeof category_Meta_Title !== "undefined") {
+      category.category_Meta_Title = category_Meta_Title;
+    }
+    if (typeof category_Meta_Description !== "undefined") {
+      category.category_Meta_Description = category_Meta_Description;
+    }
+
+    await category.save();
+    return res.status(200).json({
+      message: "Category meta saved",
+      meta: {
+        category_Meta_Title: category.category_Meta_Title,
+        category_Meta_Description: category.category_Meta_Description,
+      },
+    });
+  } catch (err) {
+    console.error("setCategoryMeta error:", err);
+    return res
+      .status(500)
+      .json({ message: "Internal server error: " + err.message });
+  }
+};
+
 // faq
 export const addFaqToCourse = async (req, res) => {
   const { courseId } = req.params;
@@ -270,9 +314,9 @@ export const getallCourses = async (req, res) => {
   try {
     const coursesByCategory = await CourseGroup.find({})
       .populate({
-        path: 'courses.Instructor',
-        model: 'Instructor',
-        select: 'name photo', // whatever you need
+        path: "courses.Instructor",
+        model: "Instructor",
+        select: "name photo", // whatever you need
       })
       .lean(); // faster response, plain objects
 
@@ -283,13 +327,11 @@ export const getallCourses = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch courses',
+      message: "Failed to fetch courses",
       error: error.message,
     });
   }
 };
-
-
 
 export const getCourseById = async (req, res) => {
   try {
@@ -321,8 +363,6 @@ export const getCourseById = async (req, res) => {
     });
   }
 };
-
-
 
 // export const updateCourse = async (req, res) => {
 //   uploadFiles(req, res, async (err) => {
@@ -465,6 +505,7 @@ export const getCourseById = async (req, res) => {
 //     }
 //   });
 // };
+
 export const updateCourse = async (req, res) => {
   uploadFiles(req, res, async (err) => {
     if (err) return res.status(400).json({ message: err.message });
@@ -480,8 +521,16 @@ export const updateCourse = async (req, res) => {
       if (updatedData.url_Slug) {
         for (const g of allGroups) {
           for (const c of g.courses) {
-            if (c._id.toString() !== courseId && c.url_Slug === updatedData.url_Slug) {
-              return res.status(400).json({ message: "Duplicate found: url_Slug already exists in another course." });
+            if (
+              c._id.toString() !== courseId &&
+              c.url_Slug === updatedData.url_Slug
+            ) {
+              return res
+                .status(400)
+                .json({
+                  message:
+                    "Duplicate found: url_Slug already exists in another course.",
+                });
             }
           }
         }
@@ -492,9 +541,14 @@ export const updateCourse = async (req, res) => {
       let courseIndex = -1;
       for (const g of allGroups) {
         const idx = g.courses.findIndex((c) => c._id.toString() === courseId);
-        if (idx !== -1) { sourceGroup = g; courseIndex = idx; break; }
+        if (idx !== -1) {
+          sourceGroup = g;
+          courseIndex = idx;
+          break;
+        }
       }
-      if (!sourceGroup) return res.status(404).json({ message: "Course not found" });
+      if (!sourceGroup)
+        return res.status(404).json({ message: "Course not found" });
 
       const targetCourse = sourceGroup.courses[courseIndex];
 
@@ -503,7 +557,10 @@ export const updateCourse = async (req, res) => {
         const newPath = req.files.course_Image[0].path;
         if (targetCourse.course_Image) {
           const oldPath = path.resolve(targetCourse.course_Image);
-          fs.unlink(oldPath, (e) => e && console.error("Error deleting old image:", e));
+          fs.unlink(
+            oldPath,
+            (e) => e && console.error("Error deleting old image:", e)
+          );
         }
         targetCourse.course_Image = newPath;
       }
@@ -511,7 +568,10 @@ export const updateCourse = async (req, res) => {
         const newPath = req.files.Brochure[0].path;
         if (targetCourse.Brochure) {
           const oldPath = path.resolve(targetCourse.Brochure);
-          fs.unlink(oldPath, (e) => e && console.error("Error deleting old brochure:", e));
+          fs.unlink(
+            oldPath,
+            (e) => e && console.error("Error deleting old brochure:", e)
+          );
         }
         targetCourse.Brochure = newPath;
       }
@@ -529,13 +589,20 @@ export const updateCourse = async (req, res) => {
             ? g._id.toString() === String(targetCategoryId)
             : g.category_Name === String(targetCategoryName)
         );
-        if (!destinationGroup) return res.status(400).json({ message: "Target category not found" });
+        if (!destinationGroup)
+          return res.status(400).json({ message: "Target category not found" });
       }
 
-      const sameGroup = !destinationGroup || destinationGroup._id.equals(sourceGroup._id);
+      const sameGroup =
+        !destinationGroup || destinationGroup._id.equals(sourceGroup._id);
       if (sameGroup) {
         await sourceGroup.save(); // just edits
-        return res.status(200).json({ message: "Course updated successfully", updatedCourse: targetCourse });
+        return res
+          .status(200)
+          .json({
+            message: "Course updated successfully",
+            updatedCourse: targetCourse,
+          });
       }
 
       // 7) move without transaction
@@ -548,7 +615,9 @@ export const updateCourse = async (req, res) => {
 
       // 8) return fresh
       const reloadedDest = await CourseGroup.findById(destinationGroup._id);
-      const updatedCourse = reloadedDest.courses.find((c) => c._id.toString() === courseId);
+      const updatedCourse = reloadedDest.courses.find(
+        (c) => c._id.toString() === courseId
+      );
 
       res.status(200).json({
         message: "Course updated & moved successfully",
@@ -557,7 +626,9 @@ export const updateCourse = async (req, res) => {
         toCategory: destinationGroup.category_Name,
       });
     } catch (error) {
-      res.status(500).json({ message: "Internal server error: " + error.message });
+      res
+        .status(500)
+        .json({ message: "Internal server error: " + error.message });
     }
   });
 };
@@ -568,7 +639,11 @@ export const reorderCourses = async (req, res) => {
     const { order } = req.body; // array of course IDs in the desired order
 
     if (!Array.isArray(order) || order.length === 0) {
-      return res.status(400).json({ message: "Provide 'order' as a non-empty array of course IDs." });
+      return res
+        .status(400)
+        .json({
+          message: "Provide 'order' as a non-empty array of course IDs.",
+        });
     }
 
     const group = await CourseGroup.findById(categoryId);
@@ -599,7 +674,6 @@ export const reorderCourses = async (req, res) => {
     res.status(500).json({ message: "Internal server error: " + err.message });
   }
 };
-
 
 export const updateCategoryInfo = async (req, res) => {
   try {
@@ -717,20 +791,51 @@ export const deleteCourse = async (req, res) => {
   }
 };
 
+// export const getCoursesByCategory = async (req, res) => {
+//   try {
+//     const { category } = req.params;
+
+//     // Find the category group by slug or name
+//     const courseGroup = await CourseGroup.findOne({ category_Name: category });
+
+//     if (!courseGroup) {
+//       return res
+//         .status(404)
+//         .json({ message: "No category found for this name" });
+//     }
+
+//     // Manually populate Instructor for each course
+//     const populatedCourses = await Promise.all(
+//       courseGroup.courses.map(async (course) => {
+//         const populated = await CourseGroup.populate(course, {
+//           path: "Instructor",
+//         });
+//         return populated;
+//       })
+//     );
+
+//     // Return the full group, but with populated instructors
+//     res.status(200).json({
+//       category_Name: courseGroup.category_Name,
+//       category_Description: courseGroup.category_Description,
+//       courses: populatedCourses,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server Error: " + error.message });
+//   }
+// };
+
 export const getCoursesByCategory = async (req, res) => {
   try {
     const { category } = req.params;
 
-    // Find the category group by slug or name
     const courseGroup = await CourseGroup.findOne({ category_Name: category });
-
     if (!courseGroup) {
       return res
         .status(404)
         .json({ message: "No category found for this name" });
     }
 
-    // Manually populate Instructor for each course
     const populatedCourses = await Promise.all(
       courseGroup.courses.map(async (course) => {
         const populated = await CourseGroup.populate(course, {
@@ -740,14 +845,34 @@ export const getCoursesByCategory = async (req, res) => {
       })
     );
 
-    // Return the full group, but with populated instructors
-    res.status(200).json({
+    // computed fallback, prefer meta > fallback to name/description
+    const meta = {
+      title:
+        courseGroup.category_Meta_Title &&
+        courseGroup.category_Meta_Title.trim()
+          ? courseGroup.category_Meta_Title
+          : courseGroup.category_Name || "",
+      description:
+        courseGroup.category_Meta_Description &&
+        courseGroup.category_Meta_Description.trim()
+          ? courseGroup.category_Meta_Description
+          : courseGroup.category_Description || "",
+    };
+
+    return res.status(200).json({
+      // raw
       category_Name: courseGroup.category_Name,
       category_Description: courseGroup.category_Description,
+      category_Meta_Title: courseGroup.category_Meta_Title || "",
+      category_Meta_Description: courseGroup.category_Meta_Description || "",
+
+      // ready-to-use
+      meta,
+
       courses: populatedCourses,
     });
   } catch (error) {
-    res.status(500).json({ message: "Server Error: " + error.message });
+    return res.status(500).json({ message: "Server Error: " + error.message });
   }
 };
 
@@ -784,11 +909,14 @@ export const getCoursesByCategoryById = async (req, res) => {
 
 export const getCourseCategories = async (req, res) => {
   try {
-    const categories = await CourseGroup.find({}, {
-      _id: 1,
-      category_Name: 1,
-      category_Description: 1
-    });
+    const categories = await CourseGroup.find(
+      {},
+      {
+        _id: 1,
+        category_Name: 1,
+        category_Description: 1,
+      }
+    );
 
     res.status(200).json(categories);
   } catch (error) {
@@ -796,13 +924,10 @@ export const getCourseCategories = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching courses",
-      error: error.message || error
+      error: error.message || error,
     });
   }
 };
-
-
-
 
 export const getBootcampCoursesOnly = async (req, res) => {
   try {

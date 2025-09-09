@@ -40,6 +40,8 @@ const courseDetailSchema = new mongoose.Schema(
 const categoryWithCoursesSchema = new mongoose.Schema({
   category_Name: { type: String, required: true },
   category_Description: { type: String },
+  category_Meta_Title: { type: String },
+  category_Meta_Description: { type: String },
   courses: [courseDetailSchema],
 });
 

@@ -18,6 +18,7 @@ import {
   getCoursesByCategoryById,
   getCourseCategories,
   reorderCourses,
+  setCategoryMeta,
 } from "../controllers/courseController.js";
 import { uploadFiles } from "../multer/multerConfig.js";
 import { allowRoles, checkPublicToken } from "../middlewar/checkRole.js";
@@ -51,6 +52,14 @@ courseRoutes.post(
   allowRoles("admin", "modifier", "superadmin"),
   uploadFiles,
   createCourse
+);
+
+
+courseRoutes.post(
+  "/category/:id/meta",
+  verifyToken,
+  allowRoles("superadmin", "modifier"),
+  setCategoryMeta
 );
 
 courseRoutes.put(
