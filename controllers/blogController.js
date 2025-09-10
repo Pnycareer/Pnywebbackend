@@ -49,6 +49,7 @@ export const createBlog = async (req, res) => {
       pageindex,
       insitemap,
       inviewweb,
+      blogImageAlt,
     } = req.body;
 
     const blogImage = req.files?.blogImage ? req.files.blogImage[0].path : null;
@@ -74,6 +75,7 @@ export const createBlog = async (req, res) => {
       blogDescription,
       publishDate,
       blogImage,
+      blogImageAlt,
       metaTitle,
       metaDescription,
       tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
@@ -109,7 +111,6 @@ export const createBlog = async (req, res) => {
       .json({ message: "Failed to create blog", error: error.message });
   }
 };
-
 
 // Get All Blogs
 export const getAllBlogs = async (req, res) => {
@@ -210,7 +211,7 @@ export const getBlogById = async (req, res) => {
       error: error.message,
     });
   }
-};        
+};
 
 export const updateBlog = async (req, res) => {
   try {
@@ -263,8 +264,9 @@ export const updateBlog = async (req, res) => {
       insitemap,
       canonical,
       inviewweb,
-      showtoc, // ✅ Add this
-      newCategory, // ✅ Pass this in req.body
+      showtoc, 
+      newCategory, 
+      blogImageAlt,
     } = req.body;
 
     blogToUpdate.blogName = blogName || blogToUpdate.blogName;
@@ -291,7 +293,10 @@ export const updateBlog = async (req, res) => {
       inviewweb !== undefined ? inviewweb : blogToUpdate.inviewweb;
     blogToUpdate.showtoc =
       showtoc !== undefined ? showtoc : blogToUpdate.showtoc;
-
+ if (blogImageAlt !== undefined) {
+  const trimmed = String(blogImageAlt).trim();
+   blogToUpdate.blogImageAlt =
+      trimmed || `${blogToUpdate.blogName || "Blog"} image`;}
     // 4. Handle category change
     if (newCategory && newCategory !== originalCategory.blogCategory) {
       // Remove blog from old category
@@ -309,11 +314,9 @@ export const updateBlog = async (req, res) => {
       targetCategory.blogs.push(blogToUpdate);
       await targetCategory.save();
 
-      return res
-        .status(200)
-        .json({
-          message: "Blog updated and moved to new category successfully",
-        });
+      return res.status(200).json({
+        message: "Blog updated and moved to new category successfully",
+      });
     } else {
       // No category change
       await originalCategory.save();

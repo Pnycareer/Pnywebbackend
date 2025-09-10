@@ -8,6 +8,7 @@ const blogSubSchema = new mongoose.Schema({
   blogDescription: { type: String, required: true },
   publishDate: { type: Date, default: Date.now },
   blogImage: { type: String, required: true },
+  blogImageAlt: { type: String, trim: true }, // ✅ NEW
   tags: [{ type: String }],
   metaTitle: { type: String, required: true, trim: true },
   metaDescription: { type: String, required: true, trim: true },

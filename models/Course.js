@@ -5,6 +5,7 @@ const courseDetailSchema = new mongoose.Schema(
     course_Name: { type: String, required: true },
     url_Slug: { type: String, required: true },
     course_Image: { type: String },
+    course_Image_Alt: { type: String },
     video_Id: { type: String },
     Skill_Level: { type: String },
     Course_Description: { type: String },

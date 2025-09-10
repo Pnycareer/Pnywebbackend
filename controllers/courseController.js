@@ -33,6 +33,7 @@ export const createCourse = async (req, res) => {
       Custom_Canonical_Url,
       category_Description,
       bootcamp,
+      course_Image_Alt, 
     } = req.body;
 
     const course_Image = req.files?.["course_Image"]?.[0]?.path || "";
@@ -57,6 +58,7 @@ export const createCourse = async (req, res) => {
       course_Name,
       url_Slug,
       course_Image,
+      course_Image_Alt,
       video_Id,
       Skill_Level,
       Short_Description,
