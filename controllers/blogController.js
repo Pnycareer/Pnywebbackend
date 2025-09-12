@@ -389,3 +389,189 @@ export const getBlogBySlug = async (req, res) => {
       .json({ message: "Failed to fetch blog by slug", error: error.message });
   }
 };
+
+export const getBlogCategories = async (req, res) => {
+  try {
+    const cats = await BlogCategory
+      .find({}, { blogCategory: 1 }) // projection: only what you need
+      .sort({ blogCategory: 1 })
+      .lean();
+
+    // optional: normalize shape if you only want the string
+    // const names = cats.map(c => c.blogCategory);
+
+    return res.status(200).json(cats);
+  } catch (err) {
+    console.error("getBlogCategories error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch blog categories",
+      error: err.message
+    });
+  }
+};
+
+export const getBlogsByCategory = async (req, res) => {
+  try {
+    const category = req.params.category;
+    const doc = await BlogCategory.findOne({ blogCategory: category }).lean();
+
+    if (!doc) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found"
+      });
+    }
+
+    // you can project only the fields you need from each blog if you want
+    return res.status(200).json(doc.blogs || []);
+  } catch (err) {
+    console.error("getBlogsByCategory error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch blogs by category",
+      error: err.message
+    });
+  }
+};
+
+
+// Blog Faq's Controller 
+
+export const addFaqToBlog = async (req, res) => {
+  const { blogId } = req.params;
+  const faqs = req.body.faqs;
+
+  if (!Array.isArray(faqs) || faqs.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide an array of FAQs."
+    });
+  }
+
+  try {
+    const catDoc = await BlogCategory.findOne({ "blogs._id": blogId });
+    if (!catDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog not found."
+      });
+    }
+
+    const blog = catDoc.blogs.id(blogId);
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog not found in category."
+      });
+    }
+
+    if (!blog.faqs) blog.faqs = [];
+    blog.faqs.push(...faqs);
+
+    await catDoc.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "FAQs added successfully.",
+      data: blog.faqs
+    });
+  } catch (err) {
+    console.error("Error adding FAQs to blog:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message
+    });
+  }
+};
+
+export const getAllFaqsInBlogs = async (req, res) => {
+  try {
+    const allCats = await BlogCategory.find().lean();
+
+    const result = [];
+    for (const cat of allCats) {
+      for (const blog of cat.blogs || []) {
+        if (blog.faqs && blog.faqs.length > 0) {
+          result.push({
+            _id: blog._id,
+            blogName: blog.blogName,
+            category: cat.blogCategory,
+            faqs: blog.faqs
+          });
+        }
+      }
+    }
+
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error("❌ ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching blog FAQs",
+      error: err.message || "Unknown error"
+    });
+  }
+};
+
+export const getBlogFaqs = async (req, res) => {
+  const { blogId } = req.params;
+
+  try {
+    const catDoc = await BlogCategory.findOne({ "blogs._id": blogId });
+    if (!catDoc) return res.status(404).json({ message: "Blog not found" });
+
+    const blog = catDoc.blogs.id(blogId);
+    return res.json(blog.faqs || []);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const updateBlogFaq = async (req, res) => {
+  const { blogId, faqId } = req.params;
+  const { question, answer } = req.body;
+
+  try {
+    const catDoc = await BlogCategory.findOne({ "blogs._id": blogId });
+    if (!catDoc) return res.status(404).json({ message: "Blog not found" });
+
+    const blog = catDoc.blogs.id(blogId);
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    const faq = blog.faqs.id(faqId);
+    if (!faq) return res.status(404).json({ message: "FAQ not found" });
+
+    if (typeof question === "string") faq.question = question;
+    if (typeof answer === "string") faq.answer = answer;
+
+    await catDoc.save();
+
+    return res.json({ success: true, faq });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteBlogFaq = async (req, res) => {
+  const { blogId, faqId } = req.params;
+
+  try {
+    const catDoc = await BlogCategory.findOne({ "blogs._id": blogId });
+    if (!catDoc) return res.status(404).json({ message: "Blog not found" });
+
+    const blog = catDoc.blogs.id(blogId);
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    blog.faqs = (blog.faqs || []).filter(
+      f => f._id.toString() !== faqId
+    );
+
+    await catDoc.save();
+
+    return res.json({ success: true, message: "FAQ deleted" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};

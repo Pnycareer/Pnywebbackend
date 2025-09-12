@@ -8,7 +8,7 @@ const blogSubSchema = new mongoose.Schema({
   blogDescription: { type: String, required: true },
   publishDate: { type: Date, default: Date.now },
   blogImage: { type: String, required: true },
-  blogImageAlt: { type: String, trim: true }, // ✅ NEW
+  blogImageAlt: { type: String, trim: true },
   tags: [{ type: String }],
   metaTitle: { type: String, required: true, trim: true },
   metaDescription: { type: String, required: true, trim: true },
@@ -21,7 +21,13 @@ const blogSubSchema = new mongoose.Schema({
   insitemap: { type: Boolean, default: true },
   // canonical: { type: String, trim: true },
   inviewweb: { type: Boolean, default: true },
-  showtoc: { type: Boolean, default: true } // ✅ Added this field
+  showtoc: { type: Boolean, default: true }, 
+  faqs: [
+      {
+        question: { type: String, required: true },
+        answer: { type: String, required: true }
+      }
+    ]
 });
 
 // 2. BlogCategory Schema

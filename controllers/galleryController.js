@@ -26,12 +26,10 @@ export const createGallery = async (req, res) => {
       }
 
       const updatedGallery = await existingGallery.save();
-      res
-        .status(200)
-        .json({
-          message: "Gallery updated with new images",
-          gallery: updatedGallery,
-        });
+      res.status(200).json({
+        message: "Gallery updated with new images",
+        gallery: updatedGallery,
+      });
     } else {
       // If no existing gallery, create new
       const newGallery = new Gallery({
@@ -79,41 +77,112 @@ export const getGalleryById = async (req, res) => {
 };
 
 // Update gallery
+// export const updateGallery = async (req, res) => {
+//   try {
+//     const { category_Name, category_Description } = req.body;
+
+//     const gallery = await Gallery.findById(req.params.id);
+//     if (!gallery) {
+//       return res.status(404).json({ message: "Gallery not found" });
+//     }
+
+//     const files = req.files?.galleryImages || [];
+//     const newPictures = files.map((file) => file.path.replace(/\\/g, "/"));
+
+//     // If new images uploaded, delete old ones
+//     if (newPictures.length > 0) {
+//       gallery.pictures.forEach((oldImagePath) => {
+//         const fullPath = path.resolve(oldImagePath);
+//         fs.unlink(fullPath, (err) => {
+//           if (err) {
+//             console.error(`Failed to delete old image: ${fullPath}`, err);
+//           }
+//         });
+//       });
+
+//       gallery.pictures = newPictures; // Replace with new images
+//     }
+
+//     gallery.category_Name = category_Name || gallery.category_Name;
+//     gallery.category_Description =
+//       category_Description || gallery.category_Description;
+
+//     const updatedGallery = await gallery.save();
+//     res.status(200).json(updatedGallery);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Server Error while updating gallery" });
+//   }
+// };
+// controller/gallery.js
+
+
+const fsp = fs.promises;
+
 export const updateGallery = async (req, res) => {
   try {
     const { category_Name, category_Description } = req.body;
+
+    // optional: front-end can send a JSON string or array named removePictures
+    // e.g. formData.append('removePictures', JSON.stringify([path1, path2]))
+    let removePictures = [];
+    if (typeof req.body.removePictures === "string") {
+      try {
+        removePictures = JSON.parse(req.body.removePictures) || [];
+      } catch (_) {}
+    } else if (Array.isArray(req.body.removePictures)) {
+      removePictures = req.body.removePictures;
+    }
 
     const gallery = await Gallery.findById(req.params.id);
     if (!gallery) {
       return res.status(404).json({ message: "Gallery not found" });
     }
 
-    const files = req.files?.galleryImages || [];
-    const newPictures = files.map((file) => file.path.replace(/\\/g, "/"));
+    // normalize current list
+    const current = Array.isArray(gallery.pictures)
+      ? gallery.pictures.slice()
+      : [];
 
-    // If new images uploaded, delete old ones
-    if (newPictures.length > 0) {
-      gallery.pictures.forEach((oldImagePath) => {
-        const fullPath = path.resolve(oldImagePath);
-        fs.unlink(fullPath, (err) => {
-          if (err) {
-            console.error(`Failed to delete old image: ${fullPath}`, err);
+    // handle removals (optional)
+    const toRemoveSet = new Set(removePictures);
+    const kept = current.filter((p) => !toRemoveSet.has(p));
+
+    // delete files we explicitly removed
+    await Promise.all(
+      current
+        .filter((p) => toRemoveSet.has(p))
+        .map(async (oldPath) => {
+          try {
+            const full = path.resolve(oldPath);
+            await fsp.unlink(full);
+          } catch (err) {
+            // don't block save if a file is already gone
+            console.error(`Failed to delete image: ${oldPath}`, err);
           }
-        });
-      });
+        })
+    );
 
-      gallery.pictures = newPictures; // Replace with new images
-    }
+    // new uploads (append, don't replace)
+    const files = req.files?.galleryImages || [];
+    const newPictures = files.map((f) => f.path.replace(/\\/g, "/"));
 
-    gallery.category_Name = category_Name || gallery.category_Name;
-    gallery.category_Description =
-      category_Description || gallery.category_Description;
+    // merge + dedupe
+    const merged = Array.from(new Set([...kept, ...newPictures]));
 
-    const updatedGallery = await gallery.save();
-    res.status(200).json(updatedGallery);
+    // assign fields
+    gallery.pictures = merged;
+    if (category_Name) gallery.category_Name = category_Name;
+    if (category_Description)
+      gallery.category_Description = category_Description;
+
+    const updated = await gallery.save();
+    return res.status(200).json(updated);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server Error while updating gallery" });
+    return res
+      .status(500)
+      .json({ message: "Server Error while updating gallery" });
   }
 };
 
