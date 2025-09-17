@@ -157,6 +157,22 @@ export const setCategoryMeta = async (req, res) => {
   }
 };
 
+export const getmetaCategoryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await CourseGroup.findById(id).lean();
+    if (!doc) return res.status(404).json({ message: "Category not found" });
+    // Make sure these props exist in the response even if empty
+    doc.category_Meta_Title = doc.category_Meta_Title || "";
+    doc.category_Meta_Description = doc.category_Meta_Description || "";
+    return res.status(200).json(doc);
+  } catch (err) {
+    console.error("getCategoryById error:", err);
+    return res.status(500).json({ message: "Internal server error: " + err.message });
+  }
+};
+
+
 // faq
 export const addFaqToCourse = async (req, res) => {
   const { courseId } = req.params;

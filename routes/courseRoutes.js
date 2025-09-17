@@ -19,10 +19,12 @@ import {
   getCourseCategories,
   reorderCourses,
   setCategoryMeta,
+  getmetaCategoryById,
 } from "../controllers/courseController.js";
 import { uploadFiles } from "../multer/multerConfig.js";
 import { allowRoles, checkPublicToken } from "../middlewar/checkRole.js";
 import { verifyToken } from "../middlewar/verifyToken.js";
+import { getCategoryById } from "../controllers/categoryController.js";
 
 const courseRoutes = express.Router();
 
@@ -44,6 +46,10 @@ courseRoutes.get(
 courseRoutes.get("/getallcategories/getcategory", getCourseCategories);
 courseRoutes.get("/bootcamp-courses/get", getBootcampCoursesOnly);
 courseRoutes.get("/getonid/:id", getCourseById);
+courseRoutes.get(
+"/getmetaoncategoryid/:id",
+  getmetaCategoryById
+);
 
 // Protected
 courseRoutes.post(
@@ -62,12 +68,15 @@ courseRoutes.post(
   setCategoryMeta
 );
 
+
+
 courseRoutes.put(
   "/update/:id",
   verifyToken,
   allowRoles("superadmin", "modifier"),
   updateCourse
 );
+
 
 // routes
 courseRoutes.put(
