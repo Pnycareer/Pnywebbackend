@@ -32,6 +32,7 @@ import gallery from "./routes/galleryRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import certificationRoutes from "./routes/trainerCertificationRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -98,6 +99,7 @@ app.use("/api/v1/gallery", gallery);
 app.use("/api/v1/contact", contactRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/certification", certificationRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 8080;
