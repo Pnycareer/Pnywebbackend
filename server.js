@@ -45,14 +45,10 @@ app.use(express.json({ limit: "50mb" }));
 // CORS Middleware Configuration
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://localhost:5175",
-  "http://localhost:10001", // Add more ports or domains as needed
-  "http://localhost:3000", // Add more ports or domains as needed
-  "https://webbackendfront.vercel.app", // Add more ports or domains as needed
-  "https://pnywebfrontend.vercel.app", // Add more ports or domains as needed
-  "https://www.pnywebfrontend.vercel.app", // Add more ports or domains as needed
-  "https://pnytrainings.com", // Add more ports or domains as needed
-  "https://www.pnytrainings.com", // Add more ports or domains as needed
+  "https://pnytrainings.com",
+  "https://www.pnytrainings.com",
+  "https://admin.pnytrainings.com",
+  "https://www.admin.pnytrainings.com",
 ];
 
 app.use(
