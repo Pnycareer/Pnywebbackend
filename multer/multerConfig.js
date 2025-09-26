@@ -6,17 +6,18 @@ const storage = multer.diskStorage({
     switch (file.fieldname) {
       case "course_Image":
         cb(null, "uploads/images/courseimages");
+        cb(null, "uploads/images/academiacourses");
         break;
       case "Brochure":
-      case "Brochuresub": // ✅ Added Brochuresub for subcourses
-        // cb(null, "uploads/images/flyers/brochures"); // 👈 updated path
-        cb(null, "uploads/images/flyers/brochures"); // 👈 updated path
+      case "Brochuresub":
+        cb(null, "uploads/images/flyers/brochures");
+        cb(null, "uploads/academia/files");
         break;
       case "postThumbnailImage":
         cb(null, "uploads/images/postThumbnail");
         break;
       case "flyerFile":
-        cb(null, "uploads/images/flyers/images"); // 👈 updated path
+        cb(null, "uploads/images/flyers/images");
         break;
       case "categoryImage":
         cb(null, "uploads/images/categories");
@@ -37,21 +38,21 @@ const storage = multer.diskStorage({
         cb(null, "uploads/images/webbanner");
         break;
       case "subimage":
-      case "Imagesub": // ✅ Added Imagesub for subcourses
+      case "Imagesub":
         cb(null, "uploads/images/subimage");
         break;
       case "blogImage":
         cb(null, "uploads/images/blogs");
         break;
-      // --- Inside destination switch ---
-      case "authorProfileImage": // ✅ NEW case added
+
+      case "authorProfileImage":
         cb(null, "uploads/images/authorprofile");
         break;
-      case "editorImage": // ✅ Add this case
+      case "editorImage":
         cb(null, "uploads/images/editor");
         break;
       case "galleryImages":
-        cb(null, "uploads/images/gallery"); // ✅ Create uploads/images/gallery folder
+        cb(null, "uploads/images/gallery");
         break;
 
       default:
@@ -77,11 +78,11 @@ const fileFilter = (req, file, cb) => {
       "image",
       "subimage",
       "Imagesub",
-      "webbanner", // ✅ Add this here
-      "blogImage", // ✅ add this here!
-      "authorProfileImage", // ✅ NEW field allowed here
+      "webbanner",
+      "blogImage",
+      "authorProfileImage",
       "editorImage",
-      "galleryImages" // ✅ Add here too
+      "galleryImages",
     ].includes(file.fieldname)
   ) {
     if (file.mimetype.startsWith("image/")) {
@@ -112,20 +113,20 @@ const upload = multer({
 export const uploadFiles = upload.fields([
   { name: "course_Image", maxCount: 1 },
   { name: "Brochure", maxCount: 1 },
-  { name: "Brochuresub", maxCount: 10 }, // ✅ Added Brochuresub
+  { name: "Brochuresub", maxCount: 10 },
   { name: "postThumbnailImage", maxCount: 1 },
   { name: "flyerFile", maxCount: 1 },
   { name: "categoryImage", maxCount: 1 },
   { name: "coverImage", maxCount: 1 },
   { name: "faqImage", maxCount: 1 },
   { name: "subimage", maxCount: 1 },
-  { name: "Imagesub", maxCount: 1 }, // ✅ Added Imagesub
+  { name: "Imagesub", maxCount: 1 },
   { name: "photo", maxCount: 1 },
   { name: "image", maxCount: 1 },
   { name: "webbanner", maxCount: 1 },
   { name: "blogImage", maxCount: 1 },
-  { name: "authorProfileImage", maxCount: 1 }, // ✅ NEW field added here
-  { name: "galleryImages", maxCount: 10 }, // ✅ ADD THIS LINE for multiple gallery uploads
+  { name: "authorProfileImage", maxCount: 1 },
+  { name: "galleryImages", maxCount: 10 },
 ]);
 
 export { storage, fileFilter };

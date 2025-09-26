@@ -33,6 +33,7 @@ import contactRoutes from "./routes/contactRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import certificationRoutes from "./routes/trainerCertificationRoutes.js";
+import academiaCourseRoutes from "./routes/academiaCourse.routes.js";
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +46,7 @@ app.use(express.json({ limit: "50mb" }));
 // CORS Middleware Configuration
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:3000",
   "https://pnytrainings.com",
   "https://www.pnytrainings.com",
   "https://admin.pnytrainings.com",
@@ -96,6 +98,7 @@ app.use("/api/v1/contact", contactRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/certification", certificationRoutes);
+app.use("/api/academia/courses", academiaCourseRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 8080;
