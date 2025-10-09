@@ -15,7 +15,7 @@ const ApplicationSchema = new mongoose.Schema(
     // discount
     discountPercent: { type: Number, required: true, min: 0, max: 100 },
 
-    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    status: { type: String, enum: ["pending", "done" , "approved", "rejected"], default: "pending" },
   },
   { timestamps: true }
 );
