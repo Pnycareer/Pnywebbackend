@@ -49,6 +49,7 @@ app.use(express.json({ limit: "50mb" }));
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
+  "http://localhost:10001",
   "https://pnytrainings.com",
   "https://www.pnytrainings.com",
   "https://admin.pnytrainings.com",
