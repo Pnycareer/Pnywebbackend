@@ -23,17 +23,15 @@ const maybeUnlink = (filepath) => {
     .catch(() => {}); // swallow if file missing
 };
 
-/** ---- NEW: parsing utils for flexible inbound payloads ---- */
+/** ---- parsing utils ---- */
 const ensureArray = (val) => {
   if (val == null) return [];
   if (Array.isArray(val)) return val;
   if (typeof val === "string") {
-    // try JSON first
     const s = val.trim();
     if (s.startsWith("[") && s.endsWith("]")) {
       try { return JSON.parse(s); } catch (_) {}
     }
-    // fallback: CSV
     return s.split(",").map((x) => x.trim()).filter(Boolean);
   }
   return [val];
@@ -43,7 +41,6 @@ const parseSubjects = (raw) => {
   const arr = ensureArray(raw)
     .map((x) => String(x).trim().toLowerCase())
     .filter(Boolean);
-  // de-dup
   return Array.from(new Set(arr));
 };
 
@@ -58,7 +55,6 @@ const parseFaqs = (raw) => {
     };
   }).filter((f) => f.question && f.answer);
 
-  // de-dup by question (case-insensitive)
   const seen = new Set();
   const out = [];
   for (const f of arr) {
@@ -84,9 +80,11 @@ export const createCourse = async (req, res) => {
     const exists = await AcademiaCourse.findOne({ slug });
     if (exists) return res.status(409).json({ message: "Slug already exists" });
 
-    // NEW: parse subjects + faqs (optional)
     const subjects = parseSubjects(body.subjects);
-    const faqs = parseFaqs(body.faqs ?? body["faqs[]"]); // handle `faqs[]` from form-data
+    const faqs = parseFaqs(body.faqs ?? body["faqs[]"]);
+
+    // normalize category for conditional fields
+    const categoryNorm = String(body.coursecategory || "").toLowerCase();
 
     const doc = await AcademiaCourse.create({
       coursename: body.coursename,
@@ -106,9 +104,12 @@ export const createCourse = async (req, res) => {
       Meta_Title: body.Meta_Title,
       Meta_Description: body.Meta_Description,
 
-      // NEW fields
       subjects: subjects.length ? subjects : undefined,
       faqs: faqs.length ? faqs : undefined,
+
+      // NEW: only relevant for corporate trainings (schema enforces required when category matches)
+      Audience: categoryNorm === "corporate trainings" ? (body.Audience || "").trim() : undefined,
+      software: categoryNorm === "corporate trainings" ? (body.software || "").trim() : undefined,
     });
 
     return res.status(201).json({ message: "Created", data: doc });
@@ -117,7 +118,7 @@ export const createCourse = async (req, res) => {
   }
 };
 
-// LIST (with filters + pagination + search)
+// LIST
 export const getCourses = async (req, res) => {
   try {
     const {
@@ -125,15 +126,15 @@ export const getCourses = async (req, res) => {
       limit = 10,
       status,
       category,
-      subject,   // NEW: optional filter ?subject=physics
+      subject,
       q,
-      onweb, // ?onweb=true
+      onweb,
     } = req.query;
 
     const filter = {};
     if (status) filter.status = status;
     if (category) filter.coursecategory = category;
-    if (subject) filter.subjects = String(subject).toLowerCase().trim(); // exact match in array
+    if (subject) filter.subjects = String(subject).toLowerCase().trim();
     if (onweb !== undefined) filter.viewOnWeb = onweb === "true";
     if (q) {
       const re = new RegExp(q, "i");
@@ -144,6 +145,9 @@ export const getCourses = async (req, res) => {
         { Course_Description: re },
         { Meta_Title: re },
         { Meta_Description: re },
+        // optional: search Audience/software too
+        { Audience: re },
+        { software: re },
       ];
     }
 
@@ -171,7 +175,7 @@ export const getCourses = async (req, res) => {
   }
 };
 
-// READ by id or slug
+// READ
 export const getCourse = async (req, res) => {
   try {
     const { idOrSlug } = req.params;
@@ -184,7 +188,7 @@ export const getCourse = async (req, res) => {
   }
 };
 
-// UPDATE (replaces files if new ones uploaded)
+// UPDATE
 export const updateCourse = async (req, res) => {
   try {
     const { idOrSlug } = req.params;
@@ -195,7 +199,6 @@ export const updateCourse = async (req, res) => {
     const body = req.body || {};
     const { imagePath, brochurePath } = pickUp(req);
 
-    // if slug is provided or coursename changes, re-slugify (and ensure uniqueness)
     if (body.slug || body.coursename) {
       const nextSlug = cleanSlug(body.slug || body.coursename || doc.coursename);
       if (nextSlug !== doc.slug) {
@@ -205,7 +208,6 @@ export const updateCourse = async (req, res) => {
       }
     }
 
-    // overwrite scalars
     [
       "coursename",
       "coursecategory",
@@ -225,7 +227,7 @@ export const updateCourse = async (req, res) => {
     if (body.Page_Index !== undefined) doc.Page_Index = body.Page_Index === "true" || body.Page_Index === true;
     if (body.priority !== undefined) doc.priority = Number(body.priority);
 
-    // NEW: subjects/faqs updates (full replace if provided)
+    // subjects/faqs
     if (body.subjects !== undefined) {
       const subjects = parseSubjects(body.subjects);
       doc.subjects = subjects;
@@ -235,7 +237,18 @@ export const updateCourse = async (req, res) => {
       doc.faqs = faqs;
     }
 
-    // file replacements
+    // NEW: Audience/software logic
+    const nextCategory = (body.coursecategory ?? doc.coursecategory ?? "").toLowerCase();
+    if (nextCategory === "corporate trainings") {
+      if (body.Audience !== undefined) doc.Audience = String(body.Audience).trim();
+      if (body.software !== undefined) doc.software = String(body.software).trim();
+    } else {
+      // not corporate: clear these to avoid stale data (optional — remove if you want to keep them)
+      if (body.Audience !== undefined) doc.Audience = undefined;
+      if (body.software !== undefined) doc.software = undefined;
+    }
+
+    // files
     if (imagePath) {
       maybeUnlink(doc.course_Image);
       doc.course_Image = imagePath;
@@ -252,7 +265,7 @@ export const updateCourse = async (req, res) => {
   }
 };
 
-// DELETE (hard delete)
+// DELETE
 export const deleteCourse = async (req, res) => {
   try {
     const { idOrSlug } = req.params;
@@ -260,7 +273,6 @@ export const deleteCourse = async (req, res) => {
     const doc = await AcademiaCourse.findOne(query);
     if (!doc) return res.status(404).json({ message: "Not found" });
 
-    // remove files if present
     maybeUnlink(doc.course_Image);
     maybeUnlink(doc.Brochure);
 
