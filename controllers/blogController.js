@@ -113,107 +113,19 @@ export const createBlog = async (req, res) => {
 };
 
 // Get All Blogs
-// export const getAllBlogs = async (req, res) => {
-//   try {
-//     const blogs = await BlogCategory.find();
-//     res.status(200).json(blogs);
-//   } catch (error) {
-//     console.error(error);
-//     res
-//       .status(500)
-//       .json({ message: "Failed to fetch blogs", error: error.message });
-//   }
-// };
-
 export const getAllBlogs = async (req, res) => {
   try {
-    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit || "12", 10), 1), 60); // hard cap
-    const category = req.query.category && req.query.category !== "all" ? req.query.category : null;
-    const q = (req.query.q || "").trim();
-    const onlyInView = req.query.inviewweb === "true";
-
-    const match = {};
-    if (category) match.blogCategory = category;
-
-    // Unwind nested blogs inside BlogCategory
-    const pipeline = [
-      { $match: match },
-      { $unwind: "$blogs" },
-      {
-        $replaceRoot: {
-          newRoot: {
-            $mergeObjects: [
-              "$blogs",
-              { category: "$blogCategory" }
-            ]
-          }
-        }
-      },
-    ];
-
-    // Visibility filter
-    if (onlyInView) pipeline.push({ $match: { inviewweb: true } });
-
-    // Search by name/desc/slug (basic)
-    if (q) {
-      pipeline.push({
-        $match: {
-          $or: [
-            { blogName: { $regex: q, $options: "i" } },
-            { shortDescription: { $regex: q, $options: "i" } },
-            { url_slug: { $regex: q, $options: "i" } },
-            { category: { $regex: q, $options: "i" } },
-          ],
-        },
-      });
-    }
-
-    // Sort newest first
-    pipeline.push({ $sort: { publishDate: -1, _id: -1 } });
-
-    // Count+paginate
-    pipeline.push({
-      $facet: {
-        items: [
-          { $project: {
-              _id: 1,
-              blogName: 1,
-              shortDescription: 1,
-              blogImage: 1,
-              blogImageAlt: 1,
-              publishDate: 1,
-              url_slug: 1,
-              inviewweb: 1,
-              category: 1,
-          }},
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-        ],
-        total: [{ $count: "count" }],
-      },
-    });
-
-    // Fetch list of categories separately (lightweight)
-    const categoriesPromise = BlogCategory.find({}, { blogCategory: 1, _id: 0 }).lean();
-
-    const [result] = await BlogCategory.aggregate(pipeline);
-    const categoriesDocs = await categoriesPromise;
-
-    const total = result?.total?.[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit) || 1;
-
-    res.set("Cache-Control", "public, max-age=30, s-maxage=60"); // let Next cache a bit
-    return res.status(200).json({
-      items: result.items,
-      pagination: { page, limit, total, totalPages },
-      categories: ["all", ...new Set(categoriesDocs.map(c => c.blogCategory))],
-    });
+    const blogs = await BlogCategory.find();
+    res.status(200).json(blogs);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to fetch blogs", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch blogs", error: error.message });
   }
 };
+
+
 
 // export const getBlogById = async (req, res) => {
 //   try {
