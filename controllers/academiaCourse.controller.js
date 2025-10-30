@@ -66,10 +66,6 @@ const parseFaqs = (raw) => {
   }
   return out;
 };
-
-const escapeRegex = (s) =>
-  String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
 /** ---- /parsers ---- */
 
 // CREATE
@@ -170,8 +166,8 @@ export const getCourses = async (req, res) => {
 // READ
 export const getCourse = async (req, res) => {
   try {
-    const { coursecategory } = req.params;
-    const query = isObjectId(idOrSlug) ? { coursecategory: coursecategory } : { slug: idOrSlug };
+    const { idOrSlug } = req.params;
+    const query = isObjectId(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
     const doc = await AcademiaCourse.findOne(query).populate("Instructor");
     if (!doc) return res.status(404).json({ message: "Not found" });
     return res.json({ data: doc });
@@ -272,32 +268,5 @@ export const deleteCourse = async (req, res) => {
     return res.json({ message: "Deleted" });
   } catch (err) {
     return res.status(500).json({ message: "Delete failed", error: err.message });
-  }
-};
-
-
-export const getCoursesByCategory = async (req, res) => {
-  try {
-    const raw = String(req.params.category || "").trim();
-
-    // exact match, case-insensitive, but safe against regex meta-chars
-    const re = new RegExp(`^${escapeRegex(raw)}$`, "i");
-
-    const items = await AcademiaCourse.find({ coursecategory: re })
-      .populate("Instructor")
-      .sort({ priority: -1, createdAt: -1 });
-
-    return res.json({
-      data: items,
-      meta: {
-        total: items.length,
-        category: raw,
-      },
-    });
-  } catch (err) {
-    return res.status(500).json({
-      message: "Fetch by category failed",
-      error: err.message,
-    });
   }
 };
