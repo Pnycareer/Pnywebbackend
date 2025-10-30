@@ -66,6 +66,10 @@ const parseFaqs = (raw) => {
   }
   return out;
 };
+
+const escapeRegex = (s) =>
+  String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 /** ---- /parsers ---- */
 
 // CREATE
@@ -121,21 +125,14 @@ export const createCourse = async (req, res) => {
 // LIST
 export const getCourses = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      category,
-      subject,
-      q,
-      onweb,
-    } = req.query;
+    const { status, category, subject, q, onweb } = req.query;
 
     const filter = {};
     if (status) filter.status = status;
     if (category) filter.coursecategory = category;
     if (subject) filter.subjects = String(subject).toLowerCase().trim();
     if (onweb !== undefined) filter.viewOnWeb = onweb === "true";
+
     if (q) {
       const re = new RegExp(q, "i");
       filter.$or = [
@@ -145,41 +142,36 @@ export const getCourses = async (req, res) => {
         { Course_Description: re },
         { Meta_Title: re },
         { Meta_Description: re },
-        // optional: search Audience/software too
         { Audience: re },
         { software: re },
       ];
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const [items, total] = await Promise.all([
-      AcademiaCourse.find(filter)
-        .populate("Instructor")
-        .sort({ priority: -1, createdAt: -1 })
-        .skip(skip)
-        .limit(Number(limit)),
-      AcademiaCourse.countDocuments(filter),
-    ]);
+    // Fetch all courses without skip/limit
+    const items = await AcademiaCourse.find(filter)
+      .populate("Instructor")
+      .sort({ priority: -1, createdAt: -1 });
 
     return res.json({
       data: items,
       meta: {
-        total,
-        page: Number(page),
-        pages: Math.ceil(total / Number(limit) || 1),
-        limit: Number(limit),
+        total: items.length,
       },
     });
   } catch (err) {
-    return res.status(500).json({ message: "Fetch failed", error: err.message });
+    return res.status(500).json({
+      message: "Fetch failed",
+      error: err.message,
+    });
   }
 };
+
 
 // READ
 export const getCourse = async (req, res) => {
   try {
-    const { idOrSlug } = req.params;
-    const query = isObjectId(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
+    const { coursecategory } = req.params;
+    const query = isObjectId(idOrSlug) ? { coursecategory: coursecategory } : { slug: idOrSlug };
     const doc = await AcademiaCourse.findOne(query).populate("Instructor");
     if (!doc) return res.status(404).json({ message: "Not found" });
     return res.json({ data: doc });
@@ -280,5 +272,32 @@ export const deleteCourse = async (req, res) => {
     return res.json({ message: "Deleted" });
   } catch (err) {
     return res.status(500).json({ message: "Delete failed", error: err.message });
+  }
+};
+
+
+export const getCoursesByCategory = async (req, res) => {
+  try {
+    const raw = String(req.params.category || "").trim();
+
+    // exact match, case-insensitive, but safe against regex meta-chars
+    const re = new RegExp(`^${escapeRegex(raw)}$`, "i");
+
+    const items = await AcademiaCourse.find({ coursecategory: re })
+      .populate("Instructor")
+      .sort({ priority: -1, createdAt: -1 });
+
+    return res.json({
+      data: items,
+      meta: {
+        total: items.length,
+        category: raw,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Fetch by category failed",
+      error: err.message,
+    });
   }
 };
