@@ -1,61 +1,59 @@
-import fs from "fs";
-import path from "path";
 import multer from "multer";
-
-const ensureUploadDir = (cb, ...candidatePaths) => {
-  let lastError = null;
-
-  for (const relPath of candidatePaths) {
-    try {
-      const absolutePath = path.resolve(relPath);
-      fs.mkdirSync(absolutePath, { recursive: true });
-      cb(null, absolutePath);
-      return;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  cb(lastError || new Error("Unable to resolve upload directory"), false);
-};
 
 // Set up storage configuration for multiple image types and brochures
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     switch (file.fieldname) {
       case "course_Image":
-        return ensureUploadDir(cb, "uploads/images/academiacourses", "uploads/images/courseimages");
+        cb(null, "uploads/images/courseimages");
+        cb(null, "uploads/images/academiacourses");
+        break;
       case "Brochure":
       case "Brochuresub":
-        return ensureUploadDir(cb, "uploads/academia/files", "uploads/images/flyers/brochures");
+        cb(null, "uploads/images/flyers/brochures");
+        cb(null, "uploads/academia/files");
+        break;
       case "postThumbnailImage":
-        return ensureUploadDir(cb, "uploads/images/postThumbnail");
+        cb(null, "uploads/images/postThumbnail");
+        break;
       case "flyerFile":
-        return ensureUploadDir(cb, "uploads/images/flyers/images");
+        cb(null, "uploads/images/flyers/images");
+        break;
       case "categoryImage":
-        return ensureUploadDir(cb, "uploads/images/categories");
+        cb(null, "uploads/images/categories");
+        break;
       case "coverImage":
-        return ensureUploadDir(cb, "uploads/images/covers");
+        cb(null, "uploads/images/covers");
+        break;
       case "faqImage":
-        return ensureUploadDir(cb, "uploads/images/faq");
+        cb(null, "uploads/images/faq");
+        break;
       case "photo":
-        return ensureUploadDir(cb, "uploads/images/instructorphoto");
+        cb(null, "uploads/images/instructorphoto");
+        break;
       case "image":
-        return ensureUploadDir(cb, "uploads/images/events");
+        cb(null, "uploads/images/events");
+        break;
       case "webbanner":
-        return ensureUploadDir(cb, "uploads/images/webbanner");
+        cb(null, "uploads/images/webbanner");
+        break;
       case "subimage":
       case "Imagesub":
-        return ensureUploadDir(cb, "uploads/images/subimage");
+        cb(null, "uploads/images/subimage");
+        break;
       case "blogImage":
-        return ensureUploadDir(cb, "uploads/images/blogs");
+        cb(null, "uploads/images/blogs");
+        break;
 
       case "authorProfileImage":
-        return ensureUploadDir(cb, "uploads/images/authorprofile");
+        cb(null, "uploads/images/authorprofile");
+        break;
       case "editorImage":
-        return ensureUploadDir(cb, "uploads/images/editor");
+        cb(null, "uploads/images/editor");
+        break;
       case "galleryImages":
-        return ensureUploadDir(cb, "uploads/images/gallery");
+        cb(null, "uploads/images/gallery");
+        break;
 
       default:
         cb(new Error("Invalid field name"), false);
