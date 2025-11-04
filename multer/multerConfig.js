@@ -6,12 +6,9 @@ const storage = multer.diskStorage({
     switch (file.fieldname) {
       case "course_Image":
         cb(null, "uploads/images/courseimages");
-        cb(null, "uploads/images/academiacourses");
         break;
       case "Brochure":
-      case "Brochuresub":
         cb(null, "uploads/images/flyers/brochures");
-        cb(null, "uploads/academia/files");
         break;
       case "postThumbnailImage":
         cb(null, "uploads/images/postThumbnail");
@@ -54,6 +51,12 @@ const storage = multer.diskStorage({
       case "galleryImages":
         cb(null, "uploads/images/gallery");
         break;
+      case "academia":
+        cb(null, "uploads/images/academiacourses");
+        break; // 🔥 add this
+      case "academiabrouchure":
+        cb(null, "uploads/images/academiacourses/files");
+        break; // 🔥 add this
 
       default:
         cb(new Error("Invalid field name"), false);
@@ -83,6 +86,7 @@ const fileFilter = (req, file, cb) => {
       "authorProfileImage",
       "editorImage",
       "galleryImages",
+      "academia",
     ].includes(file.fieldname)
   ) {
     if (file.mimetype.startsWith("image/")) {
@@ -90,7 +94,7 @@ const fileFilter = (req, file, cb) => {
     } else {
       cb(new Error("Invalid file type. Only images are allowed."));
     }
-  } else if (["Brochure", "Brochuresub"].includes(file.fieldname)) {
+  } else if (["Brochure", "academiabrouchure"].includes(file.fieldname)) {
     // ✅ Added Brochuresub for subcourses
     if (file.mimetype === "application/pdf") {
       cb(null, true);
@@ -127,6 +131,8 @@ export const uploadFiles = upload.fields([
   { name: "blogImage", maxCount: 1 },
   { name: "authorProfileImage", maxCount: 1 },
   { name: "galleryImages", maxCount: 10 },
+  { name: "academia", maxCount: 1 },
+  { name: "academiabrouchure", maxCount: 1 }, // ✅ add this
 ]);
 
 export { storage, fileFilter };

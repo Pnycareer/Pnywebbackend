@@ -10,8 +10,8 @@ const cleanSlug = (s) =>
   slugify(String(s || ""), { lower: true, strict: true, remove: /[*+~.()'"!:@]/g });
 
 const pickUp = (req) => {
-  const imagePath = req.files?.course_Image?.[0]?.path || null;
-  const brochurePath = req.files?.Brochure?.[0]?.path || null;
+  const imagePath = req.files?.academia?.[0]?.path || null;
+  const brochurePath = req.files?.academiabrouchure?.[0]?.path || null;
   return { imagePath, brochurePath };
 };
 
