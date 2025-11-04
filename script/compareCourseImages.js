@@ -82,13 +82,24 @@ const toBase = (p) => {
   // db-only (broken references)
   const missingOnDisk = [...dbSet].filter((f) => !diskSet.has(f));
 
-  console.log(`\n🧾 Unused on disk (not referenced in DB): ${unusedOnDisk.length}`);
+  console.log(
+    `\n🧾 Unused on disk (not referenced in DB): ${unusedOnDisk.length}`
+  );
   if (unusedOnDisk.length) {
-    fs.writeFileSync("unused_course_images.txt", unusedOnDisk.join("\n"), "utf8");
+    fs.writeFileSync(
+      "unused_course_images.txt",
+      unusedOnDisk.join("\n"),
+      "utf8"
+    );
     console.log("💾 Saved -> unused_course_images.txt");
+
+    console.log("\n🗑️ Unused file list:");
+    unusedOnDisk.forEach((f) => console.log(" -", f));
   }
 
-  console.log(`\n⚠️ Missing on disk (referenced in DB but file absent): ${missingOnDisk.length}`);
+  console.log(
+    `\n⚠️ Missing on disk (referenced in DB but file absent): ${missingOnDisk.length}`
+  );
   if (missingOnDisk.length) {
     fs.writeFileSync("missing_on_disk.txt", missingOnDisk.join("\n"), "utf8");
     console.log("💾 Saved -> missing_on_disk.txt");
@@ -101,6 +112,8 @@ const toBase = (p) => {
   await mongoose.disconnect();
 })().catch(async (err) => {
   console.error("❌ Error:", err);
-  try { await mongoose.disconnect(); } catch {}
+  try {
+    await mongoose.disconnect();
+  } catch {}
   process.exit(1);
 });
