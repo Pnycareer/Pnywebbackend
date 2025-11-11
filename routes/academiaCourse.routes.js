@@ -5,6 +5,7 @@ import {
   getCourse,
   updateCourse,
   deleteCourse,
+  getCoursesByCategory,
 } from "../controllers/academiaCourse.controller.js";
 import { uploadFiles } from "../multer/multerConfig.js";
 
@@ -13,7 +14,7 @@ const router = Router();
 // list + create
 router.route("/").get(getCourses).post(uploadFiles, createCourse); // expects form-data with fields + files
 
-
+router.get("/getoncategory/:category", getCoursesByCategory);
 // read / update / delete by :idOrSlug
 router
   .route("/:idOrSlug")

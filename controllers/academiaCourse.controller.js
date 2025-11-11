@@ -68,6 +68,8 @@ const parseFaqs = (raw) => {
 };
 /** ---- /parsers ---- */
 
+const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // CREATE
 export const createCourse = async (req, res) => {
   try {
@@ -159,6 +161,36 @@ export const getCourses = async (req, res) => {
       message: "Fetch failed",
       error: err.message,
     });
+  }
+};
+
+export const getCoursesByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    if (!category || !category.trim()) {
+      return res.status(400).json({ message: "category is required" });
+    }
+
+    // optional filters via query if you want to reuse this endpoint flexibly
+    const { status, subject, onweb } = req.query;
+
+    const filter = {
+      coursecategory: { $regex: `^${escapeRegExp(category.trim())}$`, $options: "i" }, // exact match, case-insensitive
+    };
+    if (status) filter.status = status;
+    if (subject) filter.subjects = String(subject).toLowerCase().trim();
+    if (onweb !== undefined) filter.viewOnWeb = onweb === "true";
+
+    const items = await AcademiaCourse.find(filter)
+      .populate("Instructor")
+      .sort({ priority: -1, createdAt: -1 });
+
+    return res.json({
+      courses: items, // <-- matches your frontend `response.data.courses`
+      meta: { total: items.length, category: category.trim() },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Fetch failed", error: err.message });
   }
 };
 
