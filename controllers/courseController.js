@@ -7,6 +7,39 @@ import CourseFeature from "../models/courseModel.js";
 import Instructor from "../models/Instructor.js";
 import mongoose from "mongoose";
 
+// Keep JSON-LD schema blocks exactly as provided (multiline strings)
+const normalizeSchemaStrings = (payload) => {
+  if (payload == null) return [];
+
+  let raw = payload;
+
+  if (typeof raw === "string") {
+    raw = raw.trim();
+    if (!raw) return [];
+    try {
+      raw = JSON.parse(raw);
+    } catch (err) {
+      console.error("schemas payload parse error:", err);
+      return [];
+    }
+  }
+
+  const arrayified = Array.isArray(raw) ? raw : [raw];
+
+  return arrayified
+    .map((entry) => {
+      if (entry == null) return null;
+      if (typeof entry === "string") return entry;
+      try {
+        return JSON.stringify(entry, null, 2);
+      } catch (err) {
+        console.error("schemas entry stringify error:", err);
+        return null;
+      }
+    })
+    .filter(Boolean);
+};
+
 export const createCourse = async (req, res) => {
   try {
     const {
@@ -33,7 +66,8 @@ export const createCourse = async (req, res) => {
       Custom_Canonical_Url,
       category_Description,
       bootcamp,
-      course_Image_Alt, 
+      course_Image_Alt,
+      schemas: rawSchemas,
     } = req.body;
 
     const course_Image = req.files?.["course_Image"]?.[0]?.path || "";
@@ -79,6 +113,7 @@ export const createCourse = async (req, res) => {
       Page_Index: Page_Index || false,
       bootcamp: bootcamp || false,
       Custom_Canonical_Url,
+      schemas: normalizeSchemaStrings(rawSchemas),
     };
 
     // Check if category already exists
@@ -531,6 +566,10 @@ export const updateCourse = async (req, res) => {
     try {
       const courseId = req.params.id;
       const { targetCategoryId, targetCategoryName, ...updatedData } = req.body;
+
+      if (Object.prototype.hasOwnProperty.call(updatedData, "schemas")) {
+        updatedData.schemas = normalizeSchemaStrings(updatedData.schemas);
+      }
 
       // 1) load groups
       const allGroups = await CourseGroup.find({});

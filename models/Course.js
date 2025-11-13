@@ -17,6 +17,11 @@ const courseDetailSchema = new mongoose.Schema(
     Meta_Title: { type: String },
     Meta_Description: { type: String },
     Brochure: { type: String },
+    schemas: {
+      type: [mongoose.Schema.Types.Mixed], // or [{}]
+      default: [],
+    },
+
     status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
     View_On_Web: { type: Boolean, default: false },
     showtoc: { type: Boolean, default: false },
