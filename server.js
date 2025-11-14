@@ -35,6 +35,7 @@ import userRoutes from "./routes/userRoutes.js";
 import certificationRoutes from "./routes/trainerCertificationRoutes.js";
 import academiaCourseRoutes from "./routes/academiaCourse.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
+import enrollmentRoutes from "./routes/landing.routes.js";
 
 
 // Load environment variables
@@ -103,6 +104,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/certification", certificationRoutes);
 app.use("/api/academia/courses", academiaCourseRoutes);
 app.use("/api/applications", applicationRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 8080;
