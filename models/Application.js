@@ -6,6 +6,8 @@ const ApplicationSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true, minlength: 2, maxlength: 120 },
     email: { type: String, required: true, trim: true, lowercase: true, index: true },
     contact: { type: String, required: true, trim: true, maxlength: 30 },
+    branch: { type: String, required: true, trim: true, maxlength: 120 },
+    city: { type: String, required: true, trim: true, maxlength: 120 },
 
     // course info
     courseId: { type: String, required: true, index: true },
@@ -15,7 +17,7 @@ const ApplicationSchema = new mongoose.Schema(
     // discount
     discountPercent: { type: Number, required: true, min: 0, max: 100 },
 
-    status: { type: String, enum: ["pending", "done" , "approved", "rejected"], default: "pending" },
+    status: { type: String, enum: ["pending", "done", "approved", "rejected"], default: "pending" },
   },
   { timestamps: true }
 );

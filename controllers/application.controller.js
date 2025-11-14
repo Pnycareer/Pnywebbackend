@@ -10,6 +10,8 @@ export async function createApplication(req, res) {
       name,
       email,
       contact,
+      branch,
+      city,
       courseId,
       course_Name,
       url_Slug,
@@ -20,6 +22,8 @@ export async function createApplication(req, res) {
     if (!name || name.trim().length < 2) return res.status(400).json({ message: "Name is required." });
     if (!email || !isEmail(email)) return res.status(400).json({ message: "Valid email is required." });
     if (!contact) return res.status(400).json({ message: "Contact is required." });
+    if (!branch || branch.trim().length < 2) return res.status(400).json({ message: "Branch is required." });
+    if (!city || city.trim().length < 2) return res.status(400).json({ message: "City is required." });
     if (!courseId || !course_Name) return res.status(400).json({ message: "Course selection is required." });
 
     const pct = Number(discountPercent);
@@ -44,6 +48,8 @@ export async function createApplication(req, res) {
       name: name.trim(),
       email: emailNorm,
       contact: String(contact).trim(),
+      branch: branch.trim(),
+      city: city.trim(),
       courseId: courseIdNorm,
       course_Name: String(course_Name),
       url_Slug: url_Slug ? String(url_Slug) : "",
@@ -57,6 +63,8 @@ export async function createApplication(req, res) {
         name: doc.name,
         email: doc.email,
         contact: doc.contact,
+        branch: doc.branch,
+        city: doc.city,
         courseId: doc.courseId,
         course_Name: doc.course_Name,
         url_Slug: doc.url_Slug,
@@ -94,7 +102,6 @@ export async function getAllApplications(req, res) {
   }
 }
 
-
 export async function markApplicationDone(req, res) {
   try {
     const { id } = req.params;
@@ -103,7 +110,6 @@ export async function markApplicationDone(req, res) {
     const doc = await Application.findById(id);
     if (!doc) return res.status(404).json({ message: "Application not found." });
 
-    // Only change pending -> done (if you want to be strict)
     if (String(doc.status).toLowerCase() === "done") {
       return res.status(200).json({
         success: true,
@@ -116,11 +122,6 @@ export async function markApplicationDone(req, res) {
       });
     }
 
-    // optionally enforce only when pending
-    // if (String(doc.status).toLowerCase() !== "pending") {
-    //   return res.status(400).json({ message: "Only pending applications can be marked done." });
-    // }
-
     doc.status = "done";
     await doc.save();
 
@@ -132,6 +133,8 @@ export async function markApplicationDone(req, res) {
         name: doc.name,
         email: doc.email,
         contact: doc.contact,
+        branch: doc.branch,
+        city: doc.city,
         courseId: doc.courseId,
         course_Name: doc.course_Name,
         url_Slug: doc.url_Slug,
